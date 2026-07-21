@@ -1,18 +1,6 @@
-# AtCoder Read-Only MCP Server
+# AtCoder MCP Server
 
-Audited read-only MCP server for exact AtCoder problem statements and samples.
-
-This is a standalone release workspace generated from the audited
-[Kether Works OJ adapter source](https://github.com/ketherworks/oj-mcp-adapters/tree/3f7ee0e040d76f6dd5460d5926d8504c8cb20256/packages/atcoder).
-The release package bundles the shared OJ contract implementation, so its runtime does not depend
-on unpublished workspace packages.
-
-## Tools
-
-- `oj_capabilities`
-- `oj_health`
-- `oj_fetch_problem`
-- `oj_search_problems`
+Find and read past AtCoder problems through MCP, locally or over hosted HTTP.
 
 ## Hosted Endpoint
 
@@ -30,6 +18,19 @@ The public anonymous read-only endpoint is:
 ```
 
 No end-user API key, cookie, or account credential is accepted.
+
+Try it with:
+
+```text
+Fetch AtCoder problem abc086_a and show its samples.
+```
+
+## Tools
+
+- `oj_capabilities`
+- `oj_health`
+- `oj_fetch_problem`
+- `oj_search_problems`
 
 ## Local Stdio
 
@@ -58,6 +59,13 @@ MCP client configuration from a source checkout:
 
 Tagged GitHub releases attach a standalone npm tarball. npm Registry and official MCP Registry
 publication are intentionally separate steps and are not claimed until their ownership checks pass.
+
+## Source
+
+This standalone release is generated from the reviewed
+[Competitive Programming MCP source](https://github.com/ketherworks/competitive-programming-mcp/tree/7f636969f183b1fe09d2c2111a095b1b80fb8a16/packages/atcoder).
+The release package bundles the shared OJ contract implementation, so its runtime does not depend
+on unpublished workspace packages.
 
 ## Policy
 

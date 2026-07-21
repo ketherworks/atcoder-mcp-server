@@ -2,8 +2,8 @@
 
 This standalone workspace is generated from:
 
-- Repository: https://github.com/ketherworks/oj-mcp-adapters
-- Commit: `3f7ee0e040d76f6dd5460d5926d8504c8cb20256`
+- Repository: https://github.com/ketherworks/competitive-programming-mcp
+- Commit: `7f636969f183b1fe09d2c2111a095b1b80fb8a16`
 - Provider source: `packages/atcoder`
 - Shared contract source: `packages/contracts`
 - Shared MCP result helpers: `packages/server-common`

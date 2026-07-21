@@ -49,7 +49,7 @@
     "node": ">=22"
   },
   "license": "MIT",
-  "description": "Audited read-only MCP server for exact AtCoder problem statements and samples.",
+  "description": "Find and read past AtCoder problems through MCP, locally or over hosted HTTP.",
   "author": "Kether Works contributors",
   "repository": {
     "type": "git",
