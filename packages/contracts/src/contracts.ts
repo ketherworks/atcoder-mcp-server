@@ -106,6 +106,7 @@ export interface OjImportWindow {
   windowId: string;
   expiresAt: string;
   state: "waiting" | "received" | "expired" | "cancelled";
+  endpoint?: string;
 }
 
 export interface OjImportPreview {
@@ -246,6 +247,7 @@ export interface OjSubmitPreview {
   providerId: string;
   problem: OjProblemRef;
   account: { accountId: string; displayName: string; site?: "global" | "cn" };
+  submissionTarget?: { kind: "account" | "team"; id: string; contestId?: string };
   languageKey: string;
   platformLanguageId: string;
   codeArtifactId: string;
