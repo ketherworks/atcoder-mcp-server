@@ -1,10 +1,12 @@
 # AtCoder MCP Server
 
+[简体中文](README.zh-CN.md)
+
 Find and read past AtCoder problems through MCP, locally or over hosted HTTP.
 
-## Hosted Endpoint
+## Quick Start
 
-The public anonymous read-only endpoint is:
+Add the hosted server to your MCP configuration:
 
 ```json
 {
@@ -17,22 +19,24 @@ The public anonymous read-only endpoint is:
 }
 ```
 
-No end-user API key, cookie, or account credential is accepted.
+The endpoint accepts anonymous read requests. It does not need an API key, Cookie, or judge account.
 
-Try it with:
+Then ask:
 
 ```text
 Fetch AtCoder problem abc086_a and show its samples.
 ```
 
-## Tools
+## What It Can Do
 
-- `oj_capabilities`
-- `oj_health`
-- `oj_fetch_problem`
-- `oj_search_problems`
+| Tool | Purpose |
+| --- | --- |
+| `oj_capabilities` | Report the available AtCoder read operations and transport. |
+| `oj_health` | Report process readiness and the latest upstream read. |
+| `oj_fetch_problem` | Fetch one past problem by canonical URL or contest/task id. |
+| `oj_search_problems` | Resolve an exact task URL or contest/task identifier. |
 
-## Local Stdio
+## Run Locally
 
 Requires Node.js 22 or newer.
 
@@ -57,17 +61,22 @@ MCP client configuration from a source checkout:
 }
 ```
 
-Tagged GitHub releases attach a standalone npm tarball. npm Registry and official MCP Registry
-publication are intentionally separate steps and are not claimed until their ownership checks pass.
+Tagged GitHub releases attach a standalone npm tarball.
 
-## Source
+## Availability
+
+- Hosted MCP: `https://api.ksrnyx.top/oj-mcp/atcoder/mcp`
+- Official MCP Registry: `io.github.ketherworks/atcoder`, described by [`server.json`](server.json)
+- Health status: see the repository homepage or call `oj_health`
+
+## Source and Safety
 
 This standalone release is generated from the reviewed
-[Competitive Programming MCP source](https://github.com/ketherworks/competitive-programming-mcp/tree/7f636969f183b1fe09d2c2111a095b1b80fb8a16/packages/atcoder).
+[Competitive Programming MCP source](https://github.com/ketherworks/competitive-programming-mcp/tree/a63a43780d866804c88a938849f92558f08fe403/packages/atcoder).
 The release package bundles the shared OJ contract implementation, so its runtime does not depend
 on unpublished workspace packages.
 
-## Policy
+## Platform Rules
 
 Do not use this server during ongoing ABC, ARC, or AGC contests. AtCoder's current
 [generative-AI rules](https://info.atcoder.jp/entry/llm-rules-en) generally prohibit that use.
