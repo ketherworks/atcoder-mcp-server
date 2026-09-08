@@ -61,6 +61,8 @@ describe("AtCoder MCP server", () => {
       structuredContent: { code: "resource.not_found", httpStatus: 404, retryPolicy: "never" }
     });
     expect(JSON.stringify(result)).not.toContain("private upstream detail");
+    const textContent = (result.content as Array<{ type: string; text: string }>).find((item) => item.type === "text");
+    expect(JSON.parse(textContent!.text)).toEqual(result.structuredContent);
 
     await client.close();
     await server.close();
