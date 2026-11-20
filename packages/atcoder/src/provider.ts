@@ -11,6 +11,7 @@ import {
   type OjSearchResult,
   type OjSourceRef
 } from "@kaiserunix/oj-mcp-contracts";
+import { formatSchemaValidationError } from "@kaiserunix/oj-mcp-server-common";
 import { z } from "zod";
 import {
   AtCoderClientError,
@@ -20,6 +21,11 @@ import {
   type AtCoderTaskLocator
 } from "./client.js";
 import { parseAtCoderProblem } from "./normalizer.js";
+
+export const ATCODER_FETCH_VALIDATION_HINT =
+  'Provide either { url: "https://atcoder.jp/contests/{contest}/tasks/{task}" } or lowercase { contestId: "abc086", taskId: "abc086_a" } (optional locale: "en" | "ja").';
+export const ATCODER_SEARCH_VALIDATION_HINT =
+  'Expected { schemaVersion: "oj.search-request/v1", requestId, platform: "atcoder", query: "abc086/abc086_a" or canonical task URL, limit (1-50) }; cursor is not supported.';
 
 const canonicalIdSchema = z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/);
 const localeSchema = z.enum(["en", "ja"]);
@@ -95,7 +101,9 @@ export class AtCoderProvider {
       if (error instanceof z.ZodError || error instanceof TypeError) {
         throw new AtCoderClientError(
           "request.invalid",
-          error instanceof z.ZodError ? error.issues.map((issue) => issue.message).join(" ") : error.message
+          error instanceof z.ZodError
+            ? formatSchemaValidationError("oj_fetch_problem", error, { hint: ATCODER_FETCH_VALIDATION_HINT })
+            : error.message
         );
       }
       throw error;
@@ -179,7 +187,9 @@ export class AtCoderProvider {
       if (error instanceof z.ZodError || error instanceof TypeError) {
         throw new AtCoderClientError(
           "request.invalid",
-          error instanceof z.ZodError ? error.issues.map((issue) => issue.message).join(" ") : error.message
+          error instanceof z.ZodError
+            ? formatSchemaValidationError("oj_search_problems", error, { hint: ATCODER_SEARCH_VALIDATION_HINT })
+            : error.message
         );
       }
       throw error;
@@ -283,7 +293,9 @@ function exactSearchLocator(query: string, locale?: AtCoderLocale): AtCoderTaskL
   const nativeId = trimmed.startsWith("atcoder:") ? trimmed.slice("atcoder:".length) : trimmed;
   const match = /^([a-z0-9][a-z0-9_-]{0,63})\/([a-z0-9][a-z0-9_-]{0,63})$/.exec(nativeId);
   if (!match) {
-    throw new TypeError("AtCoder search accepts only an exact contest/task id, atcoder:contest/task id, or canonical task URL.");
+    throw new TypeError(
+      "AtCoder lookup requires an exact 'contestId/taskId' pair (e.g., 'abc086/abc086_a'), 'atcoder:contestId/taskId', or canonical task URL ('https://atcoder.jp/contests/abc086/tasks/abc086_a'). Free-text keyword search is not supported on AtCoder."
+    );
   }
   return { contestId: match[1]!, taskId: match[2]!, locale: locale ?? "en" };
 }

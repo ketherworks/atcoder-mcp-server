@@ -13,10 +13,17 @@ import {
   type OjCapability,
   type OjError
 } from "@kaiserunix/oj-mcp-contracts";
-import { toOjToolOutputSchema, toToolError, toToolResult } from "@kaiserunix/oj-mcp-server-common";
+import {
+  formatSchemaValidationError,
+  toOjToolOutputSchema,
+  toToolError,
+  toToolResult
+} from "@kaiserunix/oj-mcp-server-common";
 import { z } from "zod";
 import { AtCoderClientError } from "./client.js";
 import {
+  ATCODER_FETCH_VALIDATION_HINT,
+  ATCODER_SEARCH_VALIDATION_HINT,
   AtCoderProvider,
   atCoderFetchProblemInputSchema,
   atCoderSearchInputSchema
@@ -43,15 +50,20 @@ export function createAtCoderMcpServer(options: AtCoderMcpServerOptions): Server
     const input = request.params.arguments ?? {};
     switch (request.params.name) {
       case "oj_capabilities":
-        return callSafely(emptyInputSchema, input, () => provider.getCapabilities(options.transport));
+        return callSafely("oj_capabilities", emptyInputSchema, input, () => provider.getCapabilities(options.transport));
       case "oj_health":
-        return callSafely(emptyInputSchema, input, () => provider.getHealth());
+        return callSafely("oj_health", emptyInputSchema, input, () => provider.getHealth());
       case "oj_fetch_problem":
-        return callSafely(atCoderFetchProblemInputSchema, input, (parsed) => provider.fetchProblem(parsed, extra.signal));
+        return callSafely("oj_fetch_problem", atCoderFetchProblemInputSchema, input, (parsed) => provider.fetchProblem(parsed, extra.signal));
       case "oj_search_problems":
-        return callSafely(atCoderSearchInputSchema, input, (parsed) => provider.search(parsed, extra.signal));
+        return callSafely("oj_search_problems", atCoderSearchInputSchema, input, (parsed) => provider.search(parsed, extra.signal));
       default:
-        return mapError(new AtCoderClientError("request.invalid", `Unknown AtCoder tool '${request.params.name}'.`));
+        return mapError(
+          new AtCoderClientError(
+            "request.invalid",
+            `Unknown AtCoder tool. Call one of: ${ATCODER_MCP_TOOL_NAMES.join(", ")}.`
+          )
+        );
     }
   });
 
@@ -105,7 +117,15 @@ function ojOutputSchema(schema: z.ZodType): NonNullable<Tool["outputSchema"]> {
   return toOjToolOutputSchema(schema) as NonNullable<Tool["outputSchema"]>;
 }
 
+const TOOL_VALIDATION_HINTS: Record<(typeof ATCODER_MCP_TOOL_NAMES)[number], string> = {
+  oj_capabilities: "This tool takes an empty object {}.",
+  oj_health: "This tool takes an empty object {}.",
+  oj_fetch_problem: ATCODER_FETCH_VALIDATION_HINT,
+  oj_search_problems: ATCODER_SEARCH_VALIDATION_HINT
+};
+
 async function callSafely<T>(
+  toolName: (typeof ATCODER_MCP_TOOL_NAMES)[number],
   schema: z.ZodType<T>,
   input: unknown,
   operation: (parsed: T) => Promise<object>
@@ -115,7 +135,7 @@ async function callSafely<T>(
     return mapError(
       new AtCoderClientError(
         "request.invalid",
-        parsed.error.issues.map((issue) => `${issue.path.join(".") || "arguments"}: ${issue.message}`).join(" ")
+        formatSchemaValidationError(toolName, parsed.error, { hint: TOOL_VALIDATION_HINTS[toolName] })
       )
     );
   }
