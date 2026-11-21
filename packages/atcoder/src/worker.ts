@@ -1,4 +1,10 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import {
+  abortable,
+  assertPositiveSafeInteger,
+  cancelBestEffort,
+  cancelReader
+} from "@kaiserunix/oj-mcp-server-common";
 import { AtCoderHtmlClient } from "./client.js";
 import { AtCoderProvider } from "./provider.js";
 import { ATCODER_MCP_TOOL_NAMES, createAtCoderMcpServer } from "./server.js";
@@ -14,6 +20,7 @@ export interface AtCoderWorkerOptions {
   maxInboundBytes?: number;
   maxConcurrentRequests?: number;
   ingressTimeoutMs?: number;
+  upstreamTimeoutMs?: number;
 }
 
 export interface AtCoderWorker {
@@ -27,13 +34,20 @@ const DEFAULT_MAX_CONCURRENT_REQUESTS = 8;
 const DEFAULT_INGRESS_TIMEOUT_MS = 10_000;
 
 export function createAtCoderWorker(options: AtCoderWorkerOptions = {}): AtCoderWorker {
-  const maxInboundBytes = positiveInteger(options.maxInboundBytes ?? DEFAULT_MAX_INBOUND_BYTES, "maxInboundBytes");
-  const ingressTimeoutMs = positiveInteger(options.ingressTimeoutMs ?? DEFAULT_INGRESS_TIMEOUT_MS, "ingressTimeoutMs");
+  const maxInboundBytes = assertPositiveSafeInteger(options.maxInboundBytes ?? DEFAULT_MAX_INBOUND_BYTES, "maxInboundBytes");
+  const ingressTimeoutMs = assertPositiveSafeInteger(options.ingressTimeoutMs ?? DEFAULT_INGRESS_TIMEOUT_MS, "ingressTimeoutMs");
+  const upstreamTimeoutMs =
+    options.upstreamTimeoutMs === undefined
+      ? undefined
+      : assertPositiveSafeInteger(options.upstreamTimeoutMs, "upstreamTimeoutMs");
   const admission = new BoundedAdmission(
-    positiveInteger(options.maxConcurrentRequests ?? DEFAULT_MAX_CONCURRENT_REQUESTS, "maxConcurrentRequests")
+    assertPositiveSafeInteger(options.maxConcurrentRequests ?? DEFAULT_MAX_CONCURRENT_REQUESTS, "maxConcurrentRequests")
   );
   const provider = new AtCoderProvider({
-    client: new AtCoderHtmlClient({ ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}) }),
+    client: new AtCoderHtmlClient({
+      ...(options.fetchImpl ? { fetchImpl: options.fetchImpl } : {}),
+      ...(upstreamTimeoutMs !== undefined ? { timeoutMs: upstreamTimeoutMs } : {})
+    }),
     ...(options.now ? { now: options.now } : {}),
     ...(options.nowIso ? { nowIso: options.nowIso } : {})
   });
@@ -248,32 +262,6 @@ async function readBoundedRequestBody(
   }
 }
 
-function abortable<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  if (signal.aborted) return Promise.reject(signal.reason);
-  return new Promise<T>((resolve, reject) => {
-    const onAbort = () => {
-      cleanup();
-      reject(signal.reason);
-    };
-    const cleanup = () => signal.removeEventListener("abort", onAbort);
-    signal.addEventListener("abort", onAbort, { once: true });
-    promise.then(
-      (value) => {
-        cleanup();
-        resolve(value);
-      },
-      (error: unknown) => {
-        cleanup();
-        reject(error);
-      }
-    );
-  });
-}
-
-function cancelReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
-  cancelBestEffort(() => reader.cancel());
-}
-
 function releaseReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
   try {
     reader.releaseLock();
@@ -285,21 +273,6 @@ function releaseReader(reader: ReadableStreamDefaultReader<Uint8Array>): void {
 function cancelRequestBody(request: Request): void {
   if (!request.body || request.body.locked) return;
   cancelBestEffort(() => request.body!.cancel());
-}
-
-function cancelBestEffort(cancel: () => Promise<void>): void {
-  try {
-    void cancel().catch(() => {
-      // Cleanup must not replace the intended ingress response or abort.
-    });
-  } catch {
-    // Cleanup must not replace the intended ingress response or abort.
-  }
-}
-
-function positiveInteger(value: number, name: string): number {
-  if (!Number.isSafeInteger(value) || value <= 0) throw new TypeError(`${name} must be a positive safe integer.`);
-  return value;
 }
 
 const worker = createAtCoderWorker();
